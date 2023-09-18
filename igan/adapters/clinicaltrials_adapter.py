@@ -365,7 +365,13 @@ class ClinicalTrialsAdapter:
                 "locations"
             ):
                 try:
-                    name = replace_quote(location.get("facility"))
+                    name = ", ".join(
+                        [
+                            replace_quote(location.get("facility")),
+                            replace_quote(location.get("city")),
+                            replace_quote(location.get("country")),
+                        ]
+                    )
                 except AttributeError:
                     name = None
 
@@ -442,8 +448,6 @@ class ClinicalTrialsAdapter:
         """
 
         logger.info("Generating nodes.")
-
-        self.studies = self._get_studies(QUERY_PARAMS)
 
         if ClinicalTrialsAdapterNodeType.STUDY in self.node_types:
             for study in self._studies:
