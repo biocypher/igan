@@ -3,9 +3,7 @@ from igan.adapters.clinicaltrials_adapter import (
     ClinicalTrialsAdapter,
 )
 
-bc = BioCypher(
-    biocypher_config_path="config/biocypher_config.yaml",
-)
+bc = BioCypher()
 adapter = ClinicalTrialsAdapter()
 
 bc.write_nodes(adapter.get_nodes())
