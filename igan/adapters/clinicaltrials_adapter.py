@@ -49,6 +49,7 @@ class ClinicalTrialsAdapterNodeType(Enum):
 
     STUDY = auto()
     ORGANISATION = auto()
+    SPONSOR = auto()
     OUTCOME = auto()
     DRUG = auto()
     DISEASE = auto()
@@ -97,6 +98,7 @@ class ClinicalTrialsAdapterEdgeType(Enum):
     STUDY_TO_DRUG = auto()
     STUDY_TO_DISEASE = auto()
     STUDY_TO_LOCATION = auto()
+    STUDY_TO_SPONSOR = auto()
 
 
 class ClinicalTrialsAdapterProteinProteinEdgeField(Enum):
@@ -174,6 +176,7 @@ class ClinicalTrialsAdapter:
         """
 
         self._organisations = {}
+        self._sponsors = {}
         self._outcomes = {}
         self._interventions = {}
         self._diseases = {}
@@ -182,6 +185,7 @@ class ClinicalTrialsAdapter:
         self._study_to_drug_edges = []
         self._study_to_disease_edges = []
         self._study_to_location_edges = []
+        self._study_to_sponsor_edges = []
 
         for study in self._studies:
             self._preprocess_study(study)
@@ -229,12 +233,45 @@ class ClinicalTrialsAdapter:
             except AttributeError:
                 oclass = None
 
-        if name and name not in self._organisations:
-            self._organisations.update(
-                {
-                    name: {"class": oclass or "N/A"},
-                }
-            )
+        if name:
+            if name not in self._organisations:
+                self._organisations.update(
+                    {
+                        name: {"class": oclass or "N/A"},
+                    }
+                )
+
+        # sponsor
+        if ClinicalTrialsAdapterNodeType.SPONSOR in self.node_types:
+            try:
+                lead = protocol.get("sponsorCollaboratorsModule").get(
+                    "leadSponsor"
+                )
+            except AttributeError:
+                lead = None
+
+            if lead:
+                name = lead.get("name")
+
+                if name not in self._sponsors.keys():
+                    self._sponsors.update(
+                        {
+                            name: {
+                                "class": lead.get("class"),
+                            }
+                        }
+                    )
+
+                # study to sponsor edges
+                self._study_to_sponsor_edges.append(
+                    (
+                        None,
+                        _id,
+                        name,
+                        "study_has_sponsor",
+                        {},
+                    )
+                )
 
         # outcomes
         if ClinicalTrialsAdapterNodeType.OUTCOME in self.node_types:
@@ -293,16 +330,17 @@ class ClinicalTrialsAdapter:
                     except AttributeError:
                         mapped_names = None
 
-                    if name and name not in self._interventions.keys():
-                        self._interventions.update(
-                            {
-                                name: {
-                                    "type": intervention_type or "N/A",
-                                    "description": description or "N/A",
-                                    "mapped_names": mapped_names or "N/A",
-                                },
-                            }
-                        )
+                    if name:
+                        if name not in self._interventions.keys():
+                            self._interventions.update(
+                                {
+                                    name: {
+                                        "type": intervention_type or "N/A",
+                                        "description": description or "N/A",
+                                        "mapped_names": mapped_names or "N/A",
+                                    },
+                                }
+                            )
 
                         # study to drug edges
                         if str(intervention_type).lower() == "drug":
@@ -390,27 +428,28 @@ class ClinicalTrialsAdapter:
                 except AttributeError:
                     country = None
 
-                if name and name not in self._locations.keys():
-                    self._locations.update(
-                        {
-                            name: {
-                                "city": city or "N/A",
-                                "state": state or "N/A",
-                                "country": country or "N/A",
-                            },
-                        }
-                    )
+                if name:
+                    if name not in self._locations.keys():
+                        self._locations.update(
+                            {
+                                name: {
+                                    "city": city or "N/A",
+                                    "state": state or "N/A",
+                                    "country": country or "N/A",
+                                },
+                            }
+                        )
 
-                # study to location edges
-                self._study_to_location_edges.append(
-                    (
-                        None,
-                        _id,
-                        name,
-                        "study_has_location",
-                        {},
+                    # study to location edges
+                    self._study_to_location_edges.append(
+                        (
+                            None,
+                            _id,
+                            name,
+                            "study_has_location",
+                            {},
+                        )
                     )
-                )
 
     def _add_outcome(self, outcome: dict, primary: bool):
         try:
@@ -430,16 +469,17 @@ class ClinicalTrialsAdapter:
         except AttributeError:
             description = None
 
-        if measure and measure not in self._outcomes:
-            self._outcomes.update(
-                {
-                    measure: {
-                        "primary": primary,
-                        "time_frame": time_frame or "N/A",
-                        "description": description or "N/A",
-                    },
-                }
-            )
+        if measure:
+            if measure not in self._outcomes:
+                self._outcomes.update(
+                    {
+                        measure: {
+                            "primary": primary,
+                            "time_frame": time_frame or "N/A",
+                            "description": description or "N/A",
+                        },
+                    }
+                )
 
     def get_nodes(self):
         """
@@ -458,9 +498,13 @@ class ClinicalTrialsAdapter:
 
                 yield (study.get("nctId"), "study", _props)
 
-        if ClinicalTrialsAdapterNodeType.ORGANISATION in self.node_types:
-            for name, props in self._organisations.items():
-                yield (name, "organisation", props)
+        # if ClinicalTrialsAdapterNodeType.ORGANISATION in self.node_types:
+        #     for name, props in self._organisations.items():
+        #         yield (name, "organisation", props)
+
+        if ClinicalTrialsAdapterNodeType.SPONSOR in self.node_types:
+            for name, props in self._sponsors.items():
+                yield (name, "sponsor", props)
 
         if ClinicalTrialsAdapterNodeType.OUTCOME in self.node_types:
             for measure, props in self._outcomes.items():
@@ -532,6 +576,15 @@ class ClinicalTrialsAdapter:
 
         if ClinicalTrialsAdapterEdgeType.STUDY_TO_LOCATION in self.edge_types:
             yield from self._study_to_location_edges
+
+        if ClinicalTrialsAdapterEdgeType.STUDY_TO_SPONSOR in self.edge_types:
+            yield from self._study_to_sponsor_edges
+
+        if (
+            ClinicalTrialsAdapterEdgeType.SPONSOR_TO_ORGANISATION
+            in self.edge_types
+        ):
+            yield from self._sponsor_to_organisation_edges
 
     def _set_types_and_fields(
         self, node_types, node_fields, edge_types, edge_fields

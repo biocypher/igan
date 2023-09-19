@@ -36,6 +36,11 @@ organisation:
     represented_as: node
     input_label: organisation
 
+sponsor:
+    is_a: administrative entity
+    represented_as: node
+    input_label: sponsor
+
 outcome:
     is_a: clinical entity
     represented_as: node
@@ -82,3 +87,10 @@ study to location association:
     input_label: study_has_location
     source: study
     target: location
+
+study to sponsor association:
+    is_a: association
+    represented_as: edge
+    input_label: study_has_sponsor
+    source: study
+    target: sponsor
