@@ -1,10 +1,9 @@
 [tool.poetry]
 name = "biocypher-project-template"
-version = "0.1.0"
-description = "Template for creating a BioCypher-driven knowledge graph"
+version = "0.1.1"
+description = "Clinical trials about IgA nephropathy from clinicaltrials.gov"
 authors = [
     "Sebastian Lobentanzer <sebastian.lobentanzer@gmail.com>",
-    "Andreas Maier <andreas.maier-1@uni-hamburg.de>",
 ]
 license = "MIT"
 readme = "README.md"
