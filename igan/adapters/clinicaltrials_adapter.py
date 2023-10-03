@@ -11,8 +11,8 @@ import requests
 
 QUERY_PARAMS = {
     "format": "json",
-    "query.parser": "advanced",
     "query.cond": "iga nephropathy",
+    # "query.parser": "advanced",
     # "query.term": "AREA[LastUpdatePostDate]RANGE[2023-01-15,MAX]",
     # "query.locn": "",
     # "query.titles": "",
@@ -579,12 +579,6 @@ class ClinicalTrialsAdapter:
 
         if ClinicalTrialsAdapterEdgeType.STUDY_TO_SPONSOR in self.edge_types:
             yield from self._study_to_sponsor_edges
-
-        if (
-            ClinicalTrialsAdapterEdgeType.SPONSOR_TO_ORGANISATION
-            in self.edge_types
-        ):
-            yield from self._sponsor_to_organisation_edges
 
     def _set_types_and_fields(
         self, node_types, node_fields, edge_types, edge_fields
